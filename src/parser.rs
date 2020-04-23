@@ -80,7 +80,7 @@ impl Parser {
                             }
                         }
                         _ => {
-                            panic!("Suspected comment does not begin with \"//\".");
+                            panic!("Suspected comment does not begin with '//'.");
                         }
                     }
                 }
@@ -179,6 +179,16 @@ mod tests {
     fn test_lex_single_comment_no_whitespace() {
         let parser = Parser {};
         let comment = String::from("//a");
+        let mut it = comment.chars().peekable();
+        let _comment2 = parser.lex_forward_slash(&mut it); 
+        panic!("Call to lex_forward_slash did not panic appropriately.");
+    }
+
+    #[test]
+    #[should_panic(expected = "Suspected comment does not begin with '//'.")]
+    fn test_lex_forward_slash_invalid_input() {
+        let parser = Parser {};
+        let comment = String::from("/a");
         let mut it = comment.chars().peekable();
         let _comment2 = parser.lex_forward_slash(&mut it); 
         panic!("Call to lex_forward_slash did not panic appropriately.");
