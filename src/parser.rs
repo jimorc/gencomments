@@ -21,6 +21,9 @@ impl Parser {
                 '\u{200E}' | '\u{200F}' | '\u{2028}' | '\u{2029}'=> {
                     result.push(self.lex_whitespace(&mut it));
                 }
+                '/' => {
+                    result.push(self.lex_forward_slash(&mut it));
+                }
                 _ => {
                     return Err(format!("Character: '{}' cannot be lexed", c));
                 }
@@ -64,7 +67,7 @@ impl Parser {
                             comment.push(c2);
                             iterator.next();
                             let &c3 = iterator.peek().unwrap();
-                            // char after "//" must be space
+                            // char after "//" must be space, tab, or new line
                             if c3 == ' ' || c3 == '\t' || c3 == '\n' {
                                 while let Some(c3) = iterator.next() {
                                     comment.push(c3);
@@ -117,20 +120,18 @@ mod tests {
     #[test]
     fn test_lex() {
         let parser = Parser {};
-        let mut whitespace = String::from(" \n\r\t");
-        whitespace.push('\x0B');
-        whitespace.push('\x0C');
-        whitespace.push('\u{85}');
-        whitespace.push('\u{200E}');
-        whitespace.push('\u{200F}');
-        whitespace.push('\u{2028}');
-        whitespace.push('\u{2029}');
-        let items = parser.lex(&whitespace).unwrap();
-        assert_eq!(items.len(), 1);
+        let code = String::from(" \n\r\t// A comment\n");
+        let items = parser.lex(&code).unwrap();
+        assert_eq!(items.len(), 2);
         if let LexItem::WhiteSpace(wspace) = items.get(0).unwrap() {
-            assert_eq!(wspace.as_str(), whitespace.to_string());
+            assert_eq!(wspace.as_str(), " \n\r\t");
         } else {
             panic!("Call to lex did not return a WhiteSpace.");
+        }
+        if let LexItem::SingleComment(comment) = items.get(1).unwrap() {
+            assert_eq!(comment.as_str(), "// A comment\n");
+        } else {
+            panic!("Call to lex did not return a SingleComment.");
         }
     }
 
