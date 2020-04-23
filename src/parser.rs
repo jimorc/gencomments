@@ -3,11 +3,10 @@ use std::iter::Peekable;
 #[derive(Debug, Clone)]
 pub enum LexItem {
     WhiteSpace(String),
+    SingleComment(String),
 }
 
-pub struct Parser {
-
-}
+pub struct Parser {}
 
 impl Parser {
     pub fn lex(&self, code: &str) -> Result<Vec<LexItem>, String>{
@@ -50,7 +49,47 @@ impl Parser {
         }
         LexItem::WhiteSpace(whitespace) 
     }
+
+    pub fn lex_forward_slash<T: Iterator<Item = char>>(&self, iterator: &mut Peekable<T>) 
+        -> LexItem {
+        let mut comment = String::new();
+        while let Some(&c) = iterator.peek() {
+            match c {
+                '/' => {
+                    comment.push(c);
+                    iterator.next();
+                    let &c2 = iterator.peek().unwrap();
+                    match c2 {
+                        '/' => {
+                            comment.push(c2);
+                            iterator.next();
+                            let &c3 = iterator.peek().unwrap();
+                            // char after "//" must be space
+                            if c3 == ' ' {
+                                while let Some(c3) = iterator.next() {
+                                    comment.push(c3);
+                                    if c3 == '\n' {
+                                        break;
+                                    }
+                                }
+                            } else {
+                                panic!("Comment does not begin: \"// \" or \"//\t\" or \"//\n\"");
+                            }
+                        }
+                        _ => {
+                            panic!("Suspected comment does not begin with \"//\".");
+                        }
+                    }
+                }
+                _ => {  // we have reached the end of the whitespace
+                    break;
+                }
+            }
+        }
+        LexItem::SingleComment(comment) 
+    }
 }
+
 
 #[cfg(test)]
 mod tests {
@@ -68,8 +107,11 @@ mod tests {
         whitespace.push('\u{2028}');
         whitespace.push('\u{2029}');
         let mut iter = whitespace.chars().peekable();
-        let LexItem::WhiteSpace(spaces) = parser.lex_whitespace(&mut iter);
-        assert_eq!(spaces, whitespace.to_string());
+        if let LexItem::WhiteSpace(spaces) = parser.lex_whitespace(&mut iter) {
+            assert_eq!(spaces, whitespace.to_string());
+        } else {
+            panic!("Call to lex_whitespace did not return a WhiteSpace.");
+        }
     }
 
     #[test]
@@ -85,7 +127,23 @@ mod tests {
         whitespace.push('\u{2029}');
         let items = parser.lex(&whitespace).unwrap();
         assert_eq!(items.len(), 1);
-        let LexItem::WhiteSpace(wspace) = items.get(0).unwrap();
-        assert_eq!(wspace.as_str(), whitespace.to_string());
+        if let LexItem::WhiteSpace(wspace) = items.get(0).unwrap() {
+            assert_eq!(wspace.as_str(), whitespace.to_string());
+        } else {
+            panic!("Call to lex did not return a WhiteSpace.");
+        }
+    }
+
+    #[test]
+    fn test_lex_single_comment() {
+        let parser = Parser {};
+        let comment = String::from("// A comment  \n");
+        let comm = comment.clone() + " ";
+        let mut it = comm.chars().peekable();
+        if let LexItem::SingleComment(comment2) = parser.lex_forward_slash(&mut it) {
+           assert_eq!(comment, comment2);
+        } else {
+            panic!("Call to lex_forward_slash did not return a SingleComment.");
+        }
     }
 }
