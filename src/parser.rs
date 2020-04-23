@@ -181,7 +181,6 @@ mod tests {
         let comment = String::from("//a");
         let mut it = comment.chars().peekable();
         let _comment2 = parser.lex_forward_slash(&mut it); 
-        panic!("Call to lex_forward_slash did not panic appropriately.");
     }
 
     #[test]
@@ -191,6 +190,5 @@ mod tests {
         let comment = String::from("/a");
         let mut it = comment.chars().peekable();
         let _comment2 = parser.lex_forward_slash(&mut it); 
-        panic!("Call to lex_forward_slash did not panic appropriately.");
     }
 }
