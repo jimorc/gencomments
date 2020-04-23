@@ -65,7 +65,7 @@ impl Parser {
                             iterator.next();
                             let &c3 = iterator.peek().unwrap();
                             // char after "//" must be space
-                            if c3 == ' ' || c3 == '\t' {
+                            if c3 == ' ' || c3 == '\t' || c3 == '\n' {
                                 while let Some(c3) = iterator.next() {
                                     comment.push(c3);
                                     if c3 == '\n' {
@@ -151,6 +151,19 @@ mod tests {
     fn test_lex_single_comment_tab() {
         let parser = Parser {};
         let comment = String::from("//\tA comment  \n");
+        let comm = comment.clone() + " ";
+        let mut it = comm.chars().peekable();
+        if let LexItem::SingleComment(comment2) = parser.lex_forward_slash(&mut it) {
+           assert_eq!(comment, comment2);
+        } else {
+            panic!("Call to lex_forward_slash did not return a SingleComment.");
+        }
+    }
+
+    #[test]
+    fn test_lex_single_comment_new_line() {
+        let parser = Parser {};
+        let comment = String::from("//\n");
         let comm = comment.clone() + " ";
         let mut it = comm.chars().peekable();
         if let LexItem::SingleComment(comment2) = parser.lex_forward_slash(&mut it) {
