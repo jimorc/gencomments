@@ -76,7 +76,7 @@ impl Parser {
                                     }
                                 }
                             } else {
-                                panic!("Comment does not begin: \"// \" or \"//\t\" or \"//\n\"");
+                                panic!("Comment does not begin: '// ' or '//\t' or '//\n'");
                             }
                         }
                         _ => {
@@ -175,7 +175,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Comment does not begin: \"// \" or \"//\t\" or \"//\n\"")]
+    #[should_panic(expected = "Comment does not begin: '// ' or '//\t' or '//\n'")]
     fn test_lex_single_comment_no_whitespace() {
         let parser = Parser {};
         let comment = String::from("//a");
