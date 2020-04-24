@@ -4,6 +4,7 @@ use std::iter::Peekable;
 pub enum LexItem {
     WhiteSpace(String),
     SingleComment(String),
+    SingleDocComment(String),
 }
 
 pub struct Parser {}
@@ -67,23 +68,26 @@ impl Parser {
                     comment.push(c2);
                     iterator.next();
                     let &c3 = iterator.peek().unwrap();
-                    // char after "//" must be space, tab, or new line
-                    if c3 == ' ' || c3 == '\t' || c3 == '\n' {
-                        while let Some(c3) = iterator.next() {
-                            comment.push(c3);
-                            if c3 == '\n' {
-                                break;
+                    match c3 {
+                        ' ' | '\n' | '\r' | '\t' | '\x0B' | '\x0C' | '\u{85}' | 
+                        '\u{200E}' | '\u{200F}' | '\u{2028}' | '\u{2029}' => {
+                            while let Some(c3) = iterator.next() {
+                                comment.push(c3);
+                                if c3 == '\n' {
+                                    break;
+                                }
                             }
+                            LexItem::SingleComment(comment) 
                         }
-                    } else {
-                        panic!("Comment does not begin: '// ' or '//\t' or '//\n'");
+                        _ => {
+                            panic!("Comment does not begin: '// ' or '//\t' or '//\n'");
+                        }
                     }
                 }
                 _ => {
                     panic!("Suspected comment does not begin with '//'.");
                 }
             }
-            LexItem::SingleComment(comment) 
         } else {
             panic!("lex_forward_slash called with string that did not start with '/'.");
         }
