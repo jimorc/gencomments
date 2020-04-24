@@ -56,40 +56,37 @@ impl Parser {
     pub fn lex_forward_slash<T: Iterator<Item = char>>(&self, iterator: &mut Peekable<T>) 
         -> LexItem {
         let mut comment = String::new();
-        while let Some(&c) = iterator.peek() {
-            match c {
+
+        let &c = iterator.peek().unwrap();
+        if c == '/' {
+            comment.push(c);
+            iterator.next();
+            let &c2 = iterator.peek().unwrap();
+            match c2 {
                 '/' => {
-                    comment.push(c);
+                    comment.push(c2);
                     iterator.next();
-                    let &c2 = iterator.peek().unwrap();
-                    match c2 {
-                        '/' => {
-                            comment.push(c2);
-                            iterator.next();
-                            let &c3 = iterator.peek().unwrap();
-                            // char after "//" must be space, tab, or new line
-                            if c3 == ' ' || c3 == '\t' || c3 == '\n' {
-                                while let Some(c3) = iterator.next() {
-                                    comment.push(c3);
-                                    if c3 == '\n' {
-                                        break;
-                                    }
-                                }
-                            } else {
-                                panic!("Comment does not begin: '// ' or '//\t' or '//\n'");
+                    let &c3 = iterator.peek().unwrap();
+                    // char after "//" must be space, tab, or new line
+                    if c3 == ' ' || c3 == '\t' || c3 == '\n' {
+                        while let Some(c3) = iterator.next() {
+                            comment.push(c3);
+                            if c3 == '\n' {
+                                break;
                             }
                         }
-                        _ => {
-                            panic!("Suspected comment does not begin with '//'.");
-                        }
+                    } else {
+                        panic!("Comment does not begin: '// ' or '//\t' or '//\n'");
                     }
                 }
-                _ => {  // we have reached the end of the whitespace
-                    break;
+                _ => {
+                    panic!("Suspected comment does not begin with '//'.");
                 }
             }
+            LexItem::SingleComment(comment) 
+        } else {
+            panic!("lex_forward_slash called with string that did not start with '/'.");
         }
-        LexItem::SingleComment(comment) 
     }
 }
 
@@ -190,5 +187,15 @@ mod tests {
         let comment = String::from("/a");
         let mut it = comment.chars().peekable();
         let _comment2 = parser.lex_forward_slash(&mut it); 
+    }
+
+    #[test]
+    #[should_panic(expected = "lex_forward_slash called with string that did not start with '/'.")]
+    fn test_lex_forward_slash_no_slash() {
+        let parser = Parser {};
+        let comment = String::from("a");
+        let mut it = comment.chars().peekable();
+        let _comment2 = parser.lex_forward_slash(&mut it);
+        panic!("test_lex_forward_slash_no_slash did not panic.");
     }
 }
