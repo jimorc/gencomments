@@ -71,13 +71,22 @@ impl Parser {
                     match c3 {
                         ' ' | '\n' | '\r' | '\t' | '\x0B' | '\x0C' | '\u{85}' | 
                         '\u{200E}' | '\u{200F}' | '\u{2028}' | '\u{2029}' => {
-                            while let Some(c3) = iterator.next() {
-                                comment.push(c3);
-                                if c3 == '\n' {
-                                    break;
-                                }
-                            }
+                            self.get_comment_text(&mut comment, &mut *iterator);
                             LexItem::SingleComment(comment) 
+                        }
+                        '/' => {
+                            comment.push(c3);
+                            iterator.next();
+                            let &c4 =iterator.peek().unwrap();
+                            if c4 == ' ' || c4 == '\n' || c4 == '\r' || c4 == '\t' ||
+                                c4 == '\x0B' || c4 == '\x0C' || c4 ==  '\u{85}' || 
+                                c4 == '\u{200E}' || c4 == '\u{200F}' || c4 == '\u{2028}' ||
+                                c4 ==  '\u{2029}' {
+                                self.get_comment_text(&mut comment, &mut *iterator);
+                                LexItem::SingleDocComment(comment) 
+                            } else {
+                                panic!("Doc Comment does not begin with '///' + whitespace.")
+                            }
                         }
                         _ => {
                             panic!("Comment does not begin: '// ' or '//\t' or '//\n'");
@@ -91,6 +100,16 @@ impl Parser {
         } else {
             panic!("lex_forward_slash called with string that did not start with '/'.");
         }
+    }
+
+    pub fn get_comment_text<T: Iterator<Item = char>>(&self, comment: &mut String, iterator: &mut Peekable<T>) {
+        while let Some(c) = iterator.next() {
+            comment.push(c);
+            if c == '\n' {
+                break;
+            }
+        }
+
     }
 }
 
@@ -202,4 +221,27 @@ mod tests {
         let _comment2 = parser.lex_forward_slash(&mut it);
         panic!("test_lex_forward_slash_no_slash did not panic.");
     }
+
+    #[test]
+    fn test_lex_doc_comment() {
+        let parser = Parser {};
+        let comment = String::from("/// A Doc comment  \n");
+        let mut it = comment.chars().peekable();
+        if let LexItem::SingleDocComment(comment2) = parser.lex_forward_slash(&mut it) {
+           assert_eq!(comment, comment2);
+        } else {
+            panic!("Call to lex_forward_slash did not return a SingleDocComment.");
+        }
+    }
+
+    #[test]
+    #[should_panic(expected = "Doc Comment does not begin with '///' + whitespace.")]
+    fn test_invalid_doc_comment() {
+        let parser = Parser {};
+        let comment = String::from("///a");
+        let mut it = comment.chars().peekable();
+        let _comment2 = parser.lex_forward_slash(&mut it); 
+        panic!("test_invalid_doc_comment did not panic where it should have");
+    }
+
 }
