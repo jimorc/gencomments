@@ -291,4 +291,16 @@ mod tests {
             panic!("Call to lex_4_slashes did not return a SingleComment.");
         }
     }
+
+    #[test]
+    fn test_code_ends_with_3_slashes() {
+        let parser = Parser {};
+        let comment = String::from("///");
+        let mut it = comment.chars().peekable();
+        if let LexItem::OuterLineDocComment(comment2) = parser.lex_forward_slash(&mut it) {
+           assert_eq!(comment, comment2);
+        } else {
+            panic!("Call to lex_forward_slash did not return a OuterLineDocComment.");
+        }
+    }
 }
