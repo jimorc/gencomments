@@ -73,16 +73,8 @@ impl Parser {
                         '/' => {
                             comment.push(c3);
                             iterator.next();
-                            let &c4 =iterator.peek().unwrap();
-                            if c4 == ' ' || c4 == '\n' || c4 == '\r' || c4 == '\t' ||
-                                c4 == '\x0B' || c4 == '\x0C' || c4 ==  '\u{85}' || 
-                                c4 == '\u{200E}' || c4 == '\u{200F}' || c4 == '\u{2028}' ||
-                                c4 ==  '\u{2029}' {
-                                self.get_comment_text(&mut comment, &mut *iterator);
-                                LexItem::OuterLineDocComment(comment) 
-                            } else {
-                                panic!("Doc Comment does not begin with '///' + whitespace.")
-                            }
+                            self.get_comment_text(&mut comment, &mut *iterator);
+                            LexItem::OuterLineDocComment(comment) 
                         }
                         _ => {
                             self.get_comment_text(&mut comment, &mut *iterator);
@@ -243,7 +235,7 @@ mod tests {
     }
 
     #[test]
-    fn test_lex_doc_comment() {
+    fn test_lex_outer_linedoc_comment() {
         let parser = Parser {};
         let comment = String::from("/// A Doc comment  \n");
         let mut it = comment.chars().peekable();
@@ -254,17 +246,7 @@ mod tests {
         }
     }
 
-    #[test]
-    #[should_panic(expected = "Doc Comment does not begin with '///' + whitespace.")]
-    fn test_invalid_doc_comment() {
-        let parser = Parser {};
-        let comment = String::from("///a");
-        let mut it = comment.chars().peekable();
-        let _comment2 = parser.lex_forward_slash(&mut it); 
-        panic!("test_invalid_doc_comment did not panic where it should have");
-    }
-
-    #[test]
+   #[test]
     fn test_multiline_comment() {
         let parser = Parser {};
         let comment = String::from("/* A Doc comment  \n * Second line*/");
