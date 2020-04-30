@@ -4,7 +4,7 @@ use std::iter::Peekable;
 pub enum LexItem {
     WhiteSpace(String),
     SingleComment(String),
-    SingleDocComment(String),
+    OuterLineDocComment(String),
     MultilineComment(String),
 }
 
@@ -79,7 +79,7 @@ impl Parser {
                                 c4 == '\u{200E}' || c4 == '\u{200F}' || c4 == '\u{2028}' ||
                                 c4 ==  '\u{2029}' {
                                 self.get_comment_text(&mut comment, &mut *iterator);
-                                LexItem::SingleDocComment(comment) 
+                                LexItem::OuterLineDocComment(comment) 
                             } else {
                                 panic!("Doc Comment does not begin with '///' + whitespace.")
                             }
@@ -247,10 +247,10 @@ mod tests {
         let parser = Parser {};
         let comment = String::from("/// A Doc comment  \n");
         let mut it = comment.chars().peekable();
-        if let LexItem::SingleDocComment(comment2) = parser.lex_forward_slash(&mut it) {
+        if let LexItem::OuterLineDocComment(comment2) = parser.lex_forward_slash(&mut it) {
            assert_eq!(comment, comment2);
         } else {
-            panic!("Call to lex_forward_slash did not return a SingleDocComment.");
+            panic!("Call to lex_forward_slash did not return a OuterLineDocComment.");
         }
     }
 
