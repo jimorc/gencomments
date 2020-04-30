@@ -70,11 +70,6 @@ impl Parser {
                     iterator.next();
                     let &c3 = iterator.peek().unwrap();
                     match c3 {
-                        ' ' | '\n' | '\r' | '\t' | '\x0B' | '\x0C' | '\u{85}' | 
-                        '\u{200E}' | '\u{200F}' | '\u{2028}' | '\u{2029}' => {
-                            self.get_comment_text(&mut comment, &mut *iterator);
-                            LexItem::SingleComment(comment) 
-                        }
                         '/' => {
                             comment.push(c3);
                             iterator.next();
@@ -90,7 +85,8 @@ impl Parser {
                             }
                         }
                         _ => {
-                            panic!("Comment does not begin: '// ' or '//\t' or '//\n'");
+                            self.get_comment_text(&mut comment, &mut *iterator);
+                            LexItem::SingleComment(comment) 
                         }
                     }
                 }
@@ -216,13 +212,16 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Comment does not begin: '// ' or '//\t' or '//\n'")]
     fn test_lex_single_comment_no_whitespace() {
         let parser = Parser {};
         let comment = String::from("//a");
         let mut it = comment.chars().peekable();
-        let _comment2 = parser.lex_forward_slash(&mut it); 
-    }
+        if let LexItem::SingleComment(comment2) = parser.lex_forward_slash(&mut it) {
+            assert_eq!(comment, comment2);
+         } else {
+             panic!("Call to lex_forward_slash did not return a SingleComment.");
+         }
+     }
 
     #[test]
     #[should_panic(expected = "Suspected comment does not begin with '//'.")]
