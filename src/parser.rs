@@ -55,7 +55,7 @@ impl Parser {
         LexItem::WhiteSpace(whitespace) 
     }
 
-    pub fn lex_forward_slash<T: Iterator<Item = char>>(&self, iterator: &mut Peekable<T>) 
+    fn lex_forward_slash<T: Iterator<Item = char>>(&self, iterator: &mut Peekable<T>) 
         -> LexItem {
         let mut comment = String::new();
 
