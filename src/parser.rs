@@ -5,6 +5,7 @@ pub enum LexItem {
     WhiteSpace(String),
     SingleComment(String),
     SingleDocComment(String),
+    MultilineComment(String),
 }
 
 pub struct Parser {}
@@ -93,6 +94,12 @@ impl Parser {
                         }
                     }
                 }
+                '*' => {
+                    comment.push(c2);
+                    iterator.next();
+                    self.get_multiline_comment_text(&mut comment, &mut *iterator);
+                    LexItem::MultilineComment(comment)
+                }
                 _ => {
                     panic!("Suspected comment does not begin with '//'.");
                 }
@@ -110,6 +117,20 @@ impl Parser {
             }
         }
 
+    }
+
+    fn get_multiline_comment_text<T: Iterator<Item = char>>(&self, comment: &mut String, iterator: &mut Peekable<T>) {
+        while let Some(c) = iterator.next() {
+            comment.push(c);
+            if c == '*' {
+                let &c2 = iterator.peek().unwrap();
+                if c2 == '/' {
+                    comment.push(c2);
+                    iterator.next();
+                    break;
+                }
+            }
+        }
     }
 }
 
@@ -244,4 +265,15 @@ mod tests {
         panic!("test_invalid_doc_comment did not panic where it should have");
     }
 
+    #[test]
+    fn test_multiline_comment() {
+        let parser = Parser {};
+        let comment = String::from("/* A Doc comment  \n * Second line*/");
+        let mut it = comment.chars().peekable();
+        if let LexItem::MultilineComment(comment2) = parser.lex_forward_slash(&mut it) {
+           assert_eq!(comment, comment2);
+        } else {
+            panic!("Call to lex_forward_slash did not return a MultilineComment.");
+        }
+    }
 }
