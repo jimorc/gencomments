@@ -125,9 +125,8 @@ impl Parser {
     // handle case where comment begins with at least '///'
     fn lex_at_least_3_slashes<T: Iterator<Item = char>>(&self, comment: &mut String, iterator: &mut Peekable<T>) 
         -> LexItem {
-        let &c3 = iterator.peek().unwrap();
+        let c3 = iterator.next().unwrap();
         comment.push(c3);
-        iterator.next();
         if let Some(c4) = iterator.next() {
             comment.push(c4);
             self.get_comment_text(comment, iterator);
@@ -139,7 +138,8 @@ impl Parser {
                 LexItem::OuterLineDocComment(comment.clone()) 
             }
         } else {
-            panic!("Programming error: should never reach here.");
+            // last three characters are ///
+            LexItem::OuterLineDocComment(comment.clone()) 
         }
     }
 }
