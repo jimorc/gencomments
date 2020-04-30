@@ -75,22 +75,8 @@ impl Parser {
                     match c3 {
                         '/' => {
                             // handle comment that starts with at least '///'
-                            comment.push(c3);
-                            iterator.next();
-                            if let Some(c4) = iterator.next() {
-                                comment.push(c4);
-                                self.get_comment_text(&mut comment, &mut *iterator);
-                                if c4 == '/' {
-                                    // handle ////
-                                    LexItem::SingleComment(comment)   
-                                } else {
-                                    // handle ///
-                                    LexItem::OuterLineDocComment(comment) 
-                                }
-                            } else {
-                                panic!("Programming error: should never reach here.");
-                            }
-                        }
+                            self.lex_at_least_3_slashes(&mut comment, &mut *iterator)
+                         }
                         _ => {
                             self.get_comment_text(&mut comment, &mut *iterator);
                             LexItem::SingleComment(comment) 
@@ -133,6 +119,27 @@ impl Parser {
                     break;
                 }
             }
+        }
+    }
+
+    // handle case where comment begins with at least '///'
+    fn lex_at_least_3_slashes<T: Iterator<Item = char>>(&self, comment: &mut String, iterator: &mut Peekable<T>) 
+        -> LexItem {
+        let &c3 = iterator.peek().unwrap();
+        comment.push(c3);
+        iterator.next();
+        if let Some(c4) = iterator.next() {
+            comment.push(c4);
+            self.get_comment_text(comment, iterator);
+            if c4 == '/' {
+                // handle ////
+                LexItem::SingleComment(comment.clone())   
+            } else {
+                // handle ///
+                LexItem::OuterLineDocComment(comment.clone()) 
+            }
+        } else {
+            panic!("Programming error: should never reach here.");
         }
     }
 }
