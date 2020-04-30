@@ -67,12 +67,14 @@ impl Parser {
             iterator.next();
             let &c2 = iterator.peek().unwrap();
             match c2 {
+                // handle comment that starts with at least '//'
                 '/' => {
                     comment.push(c2);
                     iterator.next();
                     let &c3 = iterator.peek().unwrap();
                     match c3 {
                         '/' => {
+                            // handle comment that starts with at least '///'
                             comment.push(c3);
                             iterator.next();
                             if let Some(c4) = iterator.next() {
