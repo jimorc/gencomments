@@ -55,6 +55,8 @@ impl Parser {
         LexItem::WhiteSpace(whitespace) 
     }
 
+    // this should be called only if the first character pointed to by the iterator
+    // is a '/'.
     fn lex_forward_slash<T: Iterator<Item = char>>(&self, iterator: &mut Peekable<T>) 
         -> LexItem {
         let mut comment = String::new();
@@ -73,8 +75,19 @@ impl Parser {
                         '/' => {
                             comment.push(c3);
                             iterator.next();
-                            self.get_comment_text(&mut comment, &mut *iterator);
-                            LexItem::OuterLineDocComment(comment) 
+                            if let Some(c4) = iterator.next() {
+                                comment.push(c4);
+                                self.get_comment_text(&mut comment, &mut *iterator);
+                                if c4 == '/' {
+                                    // handle ////
+                                    LexItem::SingleComment(comment)   
+                                } else {
+                                    // handle ///
+                                    LexItem::OuterLineDocComment(comment) 
+                                }
+                            } else {
+                                panic!("Programming error: should never reach here.");
+                            }
                         }
                         _ => {
                             self.get_comment_text(&mut comment, &mut *iterator);
@@ -89,11 +102,11 @@ impl Parser {
                     LexItem::MultilineComment(comment)
                 }
                 _ => {
-                    panic!("Suspected comment does not begin with '//'.");
+                    panic!("Suspected comment does not begin with '//' or '/*'.");
                 }
             }
         } else {
-            panic!("lex_forward_slash called with string that did not start with '/'.");
+            panic!("lex_forward_slash was called but first character was not '/'.")
         }
     }
 
@@ -216,7 +229,7 @@ mod tests {
      }
 
     #[test]
-    #[should_panic(expected = "Suspected comment does not begin with '//'.")]
+    #[should_panic(expected = "Suspected comment does not begin with \'//\' or \'/*\'.")]
     fn test_lex_forward_slash_invalid_input() {
         let parser = Parser {};
         let comment = String::from("/a");
@@ -225,7 +238,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "lex_forward_slash called with string that did not start with '/'.")]
+    #[should_panic(expected = "lex_forward_slash was called but first character was not \'/\'.")]
     fn test_lex_forward_slash_no_slash() {
         let parser = Parser {};
         let comment = String::from("a");
@@ -255,6 +268,18 @@ mod tests {
            assert_eq!(comment, comment2);
         } else {
             panic!("Call to lex_forward_slash did not return a MultilineComment.");
+        }
+    }
+
+    #[test]
+    fn test_4_slashes() {
+        let parser = Parser {};
+        let comment = String::from("////\n");
+        let mut it = comment.chars().peekable();
+        if let LexItem::SingleComment(comment2) = parser.lex_forward_slash(&mut it) {
+           assert_eq!(comment, comment2);
+        } else {
+            panic!("Call to lex_4_slashes did not return a SingleComment.");
         }
     }
 }
